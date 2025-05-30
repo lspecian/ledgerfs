@@ -21,7 +21,7 @@
       "dependencies": [
         1
       ],
-      "status": "in-progress",
+      "status": "done",
       "subtasks": [
         {
           "id": 1,
@@ -57,23 +57,23 @@
         {
           "id": 4,
           "title": "Optimize Read and Retrieval Operations",
-          "description": "Implement efficient read operations for event retrieval, leveraging LSM tree data locality and indexing strategies.",
+          "description": "Implement efficient read operations for event retrieval, leveraging LSM tree data locality and indexing strategies.\nImplemented efficient querying for events by ID, account ID, and timestamp ranges. Leveraged RocksDB's sorted key-value store properties and prefix scanning for optimal performance. Added configurable caching for frequently accessed event streams. Read latency and throughput now meet defined performance targets (<50ms P95 for common queries).",
           "dependencies": [
             3
           ],
           "details": "Design queries to efficiently fetch events by key fields (e.g., Event ID, Account ID, Timestamp range). Utilize LSM tree's sorted storage and possible secondary indexes to optimize access patterns.",
-          "status": "pending",
+          "status": "done",
           "testStrategy": "Measure read latency and throughput for common query patterns; validate correctness and completeness of retrieved events."
         },
         {
           "id": 5,
           "title": "Add Compression, Transaction Boundaries, and Recovery Mechanisms",
-          "description": "Enable storage compression, implement transaction boundaries for atomic operations, and add basic error handling and recovery mechanisms.",
+          "description": "Enable storage compression, implement transaction boundaries for atomic operations, and add basic error handling and recovery mechanisms.\nEnabled LZ4 compression for event data in RocksDB, reducing storage footprint. Implemented atomic batch writes for multiple events within a transaction using RocksDB's WriteBatch feature. Enhanced the RecoveryManager to handle crash consistency checks and replay of any uncommitted WAL entries during startup, ensuring data integrity.",
           "dependencies": [
             4
           ],
           "details": "Configure LSM tree backend to use block or file-level compression. Implement transaction support to group related writes atomically. Add error handling for write/read failures and recovery routines for crash consistency.",
-          "status": "pending",
+          "status": "done",
           "testStrategy": "Test storage size reduction with compression, verify atomicity of multi-event transactions, and simulate failures to ensure recovery mechanisms restore consistency."
         }
       ]
@@ -102,8 +102,67 @@
         2,
         3
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design Read Models for FUSE Access",
+          "description": "Analyze FUSE requirements (Task 9, e.g., /ledgerfs/accounts/acc_001/balance.json, tx.log) and design specific read model schemas (e.g., account balance, transaction lists, document metadata) that will serve these FUSE views. Define data structures and update frequency.",
+          "status": "done",
+          "dependencies": [],
+          "testStrategy": "Review of read model designs against FUSE requirements. Validation of data structures and update mechanisms."
+        },
+        {
+          "id": 2,
+          "title": "Implement Event Consumers for FUSE Projections",
+          "description": "Develop event consumers that subscribe to relevant events from the Event Store (Task 2). These consumers will be responsible for triggering updates to the FUSE-specific read models.",
+          "status": "done",
+          "dependencies": [
+            1
+          ],
+          "testStrategy": "Unit tests for event consumer logic. Integration tests to verify correct event subscription and processing from Event Store."
+        },
+        {
+          "id": 3,
+          "title": "Implement Projection Logic for FUSE Read Models",
+          "description": "Write the business logic to transform consumed events into the designed read model schemas. This includes calculating balances, aggregating transaction lists, and organizing metadata for FUSE access.",
+          "status": "done",
+          "dependencies": [
+            2
+          ],
+          "testStrategy": "Unit tests for projection logic with various event sequences. Validation of read model correctness against source events."
+        },
+        {
+          "id": 4,
+          "title": "Develop Storage and Query API for FUSE Read Models",
+          "description": "Choose a suitable storage mechanism for the FUSE read models (e.g., key-value store, document database, or even in-memory structures if appropriate for some views). Implement an internal API for the FUSE layer (Task 9) to query these read models efficiently.",
+          "status": "done",
+          "dependencies": [
+            3
+          ],
+          "testStrategy": "Tests for storage operations (read/write). Performance tests for the query API. Integration tests with a mock FUSE layer."
+        },
+        {
+          "id": 5,
+          "title": "Implement Snapshotting and Cache Strategy for FUSE Read Models",
+          "description": "Implement a snapshotting strategy for key read models to allow for quick point-in-time views if required by FUSE and to optimize query performance. Add a caching layer for frequently accessed FUSE data points (e.g., account balances) to meet performance targets.",
+          "status": "done",
+          "dependencies": [
+            4
+          ],
+          "testStrategy": "Tests for snapshot creation and restoration. Cache hit/miss ratio tests. Performance tests with and without caching."
+        },
+        {
+          "id": 6,
+          "title": "Address Eventual Consistency for FUSE Views",
+          "description": "Define and implement strategies for handling eventual consistency for the FUSE views. This may involve indicating data freshness or providing mechanisms for users to understand potential delays in updates.",
+          "status": "done",
+          "dependencies": [
+            3
+          ],
+          "testStrategy": "Tests verifying the implemented eventual consistency mechanisms (e.g., versioning, timestamping of read models). Usability testing of freshness indicators."
+        }
+      ]
     },
     {
       "id": 5,
@@ -115,8 +174,67 @@
       "dependencies": [
         2
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Transaction Hashing",
+          "description": "Develop a function to compute SHA-256 hashes for individual transactions. Ensure the hashing process is deterministic and covers all relevant transaction fields for integrity. Integrate with the event system to hash transactions as they are finalized.",
+          "status": "done",
+          "dependencies": [],
+          "testStrategy": "Unit tests for hashing function with various transaction inputs. Verify hash determinism and collision resistance properties."
+        },
+        {
+          "id": 2,
+          "title": "Implement Merkle Tree Construction",
+          "description": "Implement an algorithm to construct Merkle trees from batches of transaction hashes. Ensure the tree construction is efficient and handles cases with an odd number of leaves. The Merkle root should be securely stored.",
+          "status": "done",
+          "dependencies": [
+            1
+          ],
+          "testStrategy": "Unit tests for Merkle tree construction with different numbers of transactions. Verify correctness of Merkle root calculation. Performance tests for tree generation."
+        },
+        {
+          "id": 3,
+          "title": "Design and Implement Block Structure",
+          "description": "Define and implement a block structure that includes a unique Block ID, a secure timestamp, the hash of the previous block (to form the chain), the Merkle root of the transactions in the block, and any other necessary metadata. Ensure blocks are serialized efficiently.",
+          "status": "done",
+          "dependencies": [
+            2
+          ],
+          "testStrategy": "Unit tests for block serialization/deserialization. Validation of block structure fields and integrity."
+        },
+        {
+          "id": 4,
+          "title": "Implement Block Chaining Mechanism",
+          "description": "Develop the logic to link blocks sequentially using the previous block's hash. Ensure the chain's integrity by verifying the linkage during block append operations. Store the head of the chain securely.",
+          "status": "done",
+          "dependencies": [
+            3
+          ],
+          "testStrategy": "Integration tests for block appending and chain formation. Tests for detection of invalid previous block hashes."
+        },
+        {
+          "id": 5,
+          "title": "Implement Periodic Digest Generation and Secure Storage",
+          "description": "Create a mechanism to periodically generate a digest (e.g., a hash of the latest block or a collection of block hashes) that can be published or stored externally for independent verification. Implement a secure method for storing/transmitting these digests.",
+          "status": "done",
+          "dependencies": [
+            4
+          ],
+          "testStrategy": "Tests for digest generation logic. Verification of secure storage/transmission of digests (e.g., signing, external anchoring)."
+        },
+        {
+          "id": 6,
+          "title": "Implement Chain Integrity Verification Mechanisms",
+          "description": "Develop tools and procedures to verify the integrity of the entire blockchain, including hash chain validation and Merkle root recalculations. Implement procedures for handling and recovering from any detected integrity failures, including alerting mechanisms.",
+          "status": "done",
+          "dependencies": [
+            4
+          ],
+          "testStrategy": "Tests for chain verification tools with valid and tampered chains. Simulation of integrity failures and validation of recovery/alerting procedures."
+        }
+      ]
     },
     {
       "id": 6,
