@@ -1,0 +1,28 @@
+# Task ID: 3
+# Title: Develop Command Processing Service
+# Status: pending
+# Dependencies: 2
+# Priority: high
+# Description: Create the service responsible for validating commands, ensuring business logic integrity, and writing events to the Event Store.
+# Details:
+1. Define command schema for core operations:
+   - CreateAccount
+   - DebitAccount
+   - CreditAccount
+   - TransferBetweenAccounts
+2. Implement command validation logic
+3. Create command handlers for each command type
+4. Implement business logic validation (e.g., sufficient funds for debits)
+5. Add idempotency handling to prevent duplicate processing
+6. Create transaction boundaries for atomic operations
+7. Implement error handling and response generation
+8. Add logging for command processing
+9. Create metrics collection for performance monitoring
+
+# Test Strategy:
+1. Unit tests for command validation logic
+2. Integration tests for end-to-end command processing
+3. Performance tests for command throughput
+4. Idempotency tests ensuring duplicate commands are handled correctly
+5. Error handling tests for various failure scenarios
+6. Business logic validation tests (e.g., insufficient funds)

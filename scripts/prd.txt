@@ -1,0 +1,255 @@
+Product Requirements Document (PRD) for LedgerFS MVP: A Cryptographically Verifiable, Append-Only, Event-Sourced Ledger for Core Banking and E-Money Applications
+
+I. Executive Summary
+LedgerFS represents a pioneering advancement in financial technology, designed as a cryptographically verifiable, append-only, event-sourced ledger system. This innovative architecture is specifically engineered to meet the rigorous demands of core banking and e-money applications, prioritizing tamper-evidence, high-throughput transaction processing, and comprehensive auditability.
+
+The strategic imperative of the LedgerFS Minimum Viable Product (MVP) is to unequivocally validate its core premise: that it surpasses traditional RDBMS in environments where auditability, high transaction volumes, and tamper-evident data are paramount. Simultaneously, the MVP must demonstrate full adherence to critical regulatory frameworks, including PSD2, Basel III, and e-money safeguarding directives.
+
+LedgerFS distinguishes itself through several key capabilities:
+
+Cryptographic Attestation: At its core, LedgerFS employs advanced cryptographic hashing, specifically SHA-256, and Merkle tree data structures to construct an immutable, verifiable chain of all transactions. This mechanism provides an irrefutable, attestable proof of data integrity to auditors, regulators, and other business parties.
+
+Append-Only and Event-Sourced Core: The system's foundational append-only nature ensures that once a financial event or transaction is recorded, it cannot be altered or deleted. This preserves a complete and unalterable history of all financial activities, which is indispensable for robust audit trails and regulatory compliance.
+
+High-Throughput Design: LedgerFS is architected for write-heavy workloads, leveraging modern data structures such as Log-Structured Merge (LSM) trees, which are optimized for efficient writes by minimizing disk I/O and complex balancing operations. This design aims to achieve significantly higher transaction processing speeds compared to traditional RDBMS.
+
+Inherent Compliance: The system's design is intrinsically aligned with regulatory demands. Its immutable audit trail and verifiable data lineage directly support requirements such as PSD2's Strong Customer Authentication (SCA) and open banking initiatives, Basel III's emphasis on data integrity for capital adequacy and risk management, and e-money safeguarding rules for segregated and identifiable customer funds.
+
+II. Objectives & Success Criteria
+
+A. Performance Validation
+The primary aim is to achieve and demonstrate significantly higher transaction throughput and lower latency for core ledger operations, such as account debits and credits, especially in high-contention, audit-focused scenarios, when compared against a PostgreSQL baseline.
+
+Success Criteria:
+- Throughput: The system must sustain a minimum of 50,000 transactions per second (TPS) for core ledger entries under simulated peak load conditions.
+- Latency: The P95 transaction latency for ledger writes must be under 100 milliseconds (ms), and for balance queries, it must be under 50 ms.
+- Scalability: The MVP must demonstrate horizontal scalability of its write path, proving its ability to accommodate increasing transaction volumes without significant performance degradation.
+
+B. Cryptographic Verifiability
+This objective focuses on implementing and demonstrating robust cryptographic proof generation and verification mechanisms for all ledger entries, ensuring the integrity and non-repudiation of financial data.
+
+Success Criteria:
+- Merkle Tree Integrity: The system must successfully generate Merkle roots for all transaction batches and cryptographically chain these roots, forming a continuous and verifiable ledger.
+- Digest Generation & Storage: Database digests, representing the cryptographically hashed transactions and the state of the database, must be periodically generated and securely stored outside the primary database in tamper-proof storage.
+- Inclusion Proofs: The system must provide an API that allows for the generation and verification of inclusion proofs for individual transactions or specific account balances against the published Merkle root and stored digests.
+
+C. Core Compliance Readiness
+This objective ensures that the MVP's design inherently supports key data integrity, auditability, and record-keeping requirements mandated by PSD2, Basel III, and e-money safeguarding regulations.
+
+Success Criteria:
+- Immutable Audit Trail: All state changes within the system must be recorded as immutable events, providing a complete historical log that enables full reconstruction of past states and comprehensive auditability.
+- Fund Identification: The system's design must support the precise allocation and identification of individual customer funds, even when held in aggregated safeguarding accounts.
+- Real-time Monitoring Hooks: The system must provide robust interfaces or data streams for real-time transaction monitoring.
+
+III. User Stories & Personas
+
+A. Key User Personas
+- Financial Operations Analyst: Responsible for daily oversight of transaction flows, reconciliation processes, and investigation of discrepancies.
+- Compliance Officer: Tasked with ensuring strict adherence to regulatory frameworks including PSD2, Basel III, e-money safeguarding, and AML/KYC directives.
+- External Auditor: Independent third party responsible for verifying the integrity and accuracy of financial records.
+- Product Developer / Systems Integrator: Technical persona responsible for building new applications on top of LedgerFS or integrating it with existing systems.
+- Customer Support Representative: Front-line operational user handling customer inquiries and resolving disputes.
+
+B. Core User Stories (MVP Focus)
+As a Financial Operations Analyst, I want to:
+- Record a new customer deposit to their e-money account with immediate and immutable balance updates
+- View current account balances quickly for transaction confirmation
+- Query customer transaction history for reconciliation and dispute investigation
+
+As a Compliance Officer, I want to:
+- Access immutable logs of all transactions for audit report generation
+- Verify customer funds are logically segregated and identifiable for e-money safeguarding compliance
+- Receive real-time alerts for suspicious transaction patterns for AML investigations
+
+As an External Auditor, I want to:
+- Generate cryptographic proofs for specific transactions or account balances for independent verification
+- Access historical snapshots of ledger state at specific points in time for compliance audits
+
+As a Product Developer, I want to:
+- Integrate payment processing systems with LedgerFS via well-defined APIs
+- Consume real-time streams of ledger events for fraud detection and customer dashboards
+
+IV. Functional Scope (MVP)
+
+A. Core Ledger Operations
+Account Management:
+- Account Creation: Ability to create new customer accounts with unique identifiers and initial balances
+- Balance Inquiry: API for retrieving current balance of any given account with optimized read models for low-latency queries
+
+Transaction Processing:
+- Debit/Credit Transactions: Support for atomic debit and credit operations between accounts, recorded as immutable events
+- Transaction Metadata: Capture essential metadata including timestamps, transaction type, unique transaction ID, and associated parties
+- Append-Only Writes: All transaction records strictly append-only, ensuring no historical data can be overwritten or deleted
+
+Historical Data Access:
+- Event Log Query: Ability to query raw event log for specific accounts or across all accounts within defined time ranges
+- State Reconstruction: Capability to reconstruct account state at any specific point in time by replaying relevant events from the immutable log
+
+B. Cryptographic Verifiability Features
+Merkle Tree Generation:
+- Transaction Hashing: Cryptographic SHA-256 hashing of individual transactions
+- Batch Merkleization: Aggregation of transaction hashes into Merkle trees for each committed block or batch
+
+Ledger Digest Management:
+- Digest Generation: Automated, periodic generation of cryptographic digests representing the state of the entire ledger
+- External Digest Storage: Secure storage of digests outside the primary LedgerFS system in tamper-proof, immutable location
+
+Proof Generation & Verification API:
+- Inclusion Proofs: API endpoint to generate Merkle inclusion proofs for any specific transaction or account balance
+- Verification Endpoint: API endpoint to verify inclusion proofs against provided ledger digest
+
+C. Compliance & Audit Readiness
+- Immutable Audit Trail: Append-only nature provides complete and unalterable audit trail for all financial activities
+- Logical Fund Segregation Support: Mechanisms to logically tag and identify customer funds within the ledger
+- Real-time Event Streaming: Provide real-time stream of all ledger events for external monitoring systems
+
+D. FUSE Integration (MVP Addition)
+FUSE Filesystem Interface:
+- Mount Layout: Expose ledger data through filesystem interface with structured directory layout:
+  /ledgerfs/accounts/acc_001/balance.json, tx.log, snapshots/
+  /ledgerfs/transactions/tx_0001.json, tx_0002.json
+  /ledgerfs/docs/tx_0001/aml_check.json, acc_001/kyc/documents
+- Read-only Access: Initial implementation provides read-only filesystem access to ledger data
+- Permission Mapping: RBAC-based permission mapping through identity layer
+- Zero-copy Access: Memory-mapped access where supported for performance
+
+V. Architecture Overview
+
+A. High-Level Components
+- API Gateway: Entry point for external interactions, handling authentication, authorization, and routing
+- Command Processing Service: Ingests and validates commands, ensures business logic integrity, writes events to Event Store
+- Event Store (Write Model): Immutable, append-only log storing all state-changing events as single source of truth
+- Read Model Projection Services: Asynchronously consume events and project into optimized read models for specific query patterns
+- Cryptographic Attestation Service: Generates Merkle trees, chains blocks, produces periodic ledger digests
+- Proof Generation & Verification Service: APIs for generating and verifying cryptographic inclusion proofs
+- Event Streaming Service: Publishes events to external consumers in real-time
+- FUSE Interface: Filesystem layer exposing ledger data through standard filesystem operations
+
+B. Core Architectural Principles
+Append-Only Event Store:
+- Immutability: Event Store is strictly append-only, data once written cannot be modified or deleted
+- LSM Tree Technology: Leverages Log-Structured Merge tree-based database optimized for write-heavy workloads
+
+Cryptographic Chaining:
+- Merkle Trees: Transactions organized into Merkle trees with SHA-256 hashing
+- Blockchain-like Structure: Merkle roots chained together forming cryptographic chain ensuring ledger integrity
+
+CQRS and Projections:
+- Separation of Concerns: Commands modify state by appending events, queries read from optimized projections
+- Optimized Read Models: Asynchronous transformation of raw events into materialized views for specific query patterns
+- Snapshotting: Store aggregate state at particular points in time to improve reconstruction performance
+
+VI. Benchmarking Strategy
+
+A. Performance Targets
+- Throughput: >50,000 TPS for core ledger entries (5x improvement over PostgreSQL baseline)
+- Write Latency: <100ms P95 for ledger writes
+- Read Latency: <50ms P95 for balance queries
+- FUSE Access: <10ms cold access, <2ms cached access
+- Proof Generation: <50ms per transaction
+
+B. Benchmark Categories
+Macro Benchmarks:
+- End-to-end transaction processing performance
+- Account state query performance with and without snapshots
+- FUSE filesystem access latency and throughput
+
+Micro Benchmarks:
+- Event log write/read latency
+- Hash chain generation and verification time
+- Snapshot serialization/deserialization performance
+- Merkle tree construction and proof generation
+
+Compliance Benchmarks:
+- Cryptographic proof generation and verification
+- Historical state reconstruction performance
+- Audit trail query performance
+
+VII. Regulatory Alignment
+
+A. PSD2 Compliance
+- Strong Customer Authentication support through real-time event streaming
+- Open Banking API support via robust read models and well-defined APIs
+- Comprehensive audit trails for transaction transparency and liability documentation
+
+B. Basel III Compliance
+- Data integrity for capital adequacy and risk management through cryptographic verification
+- Single source of truth for accurate risk assessments and regulatory reporting
+- Non-repudiable proof of data integrity for auditors and regulators
+
+C. E-Money Safeguarding
+- Precise allocation and identification of customer funds through logical tagging
+- Immutable record-keeping for compliance demonstration
+- 24-hour safeguarding compliance through real-time transaction processing
+
+VIII. Deliverables
+
+1. LedgerFS Core System (MVP Release)
+- Deployable software package with all core components
+- Functional APIs for account management, transaction processing, and historical data access
+- FUSE filesystem interface for ledger data access
+
+2. Cryptographic Attestation Module
+- Integrated Merkle tree generation and cryptographic chaining
+- Secure external storage solution for digest persistence
+- API endpoints for proof generation and verification
+
+3. Performance Benchmarking Report
+- Comprehensive performance validation against PostgreSQL baseline
+- Analysis of cryptographic proof generation and verification performance
+- FUSE filesystem access performance metrics
+
+4. Compliance Readiness Documentation
+- Detailed mapping of LedgerFS features to regulatory requirements
+- Architectural diagrams illustrating compliance-focused data flows
+
+5. API Documentation
+- Comprehensive developer documentation for all exposed APIs
+- FUSE filesystem interface documentation
+
+6. Test Suite & Results
+- Automated test suite covering functional, performance, and cryptographic integrity
+- Complete test results demonstrating system stability and adherence to success criteria
+
+IX. Implementation Priority (MVP Focus)
+
+Phase 1: Core Infrastructure
+- Event Store implementation with LSM tree backend
+- Basic command processing and event sourcing
+- Simple account creation and transaction processing
+
+Phase 2: Cryptographic Features
+- Merkle tree generation and chaining
+- Digest generation and external storage
+- Basic proof generation and verification APIs
+
+Phase 3: FUSE Integration
+- Filesystem interface implementation
+- Read-only access to accounts and transactions
+- Permission mapping and security
+
+Phase 4: Performance Optimization
+- Read model projections and caching
+- Snapshot mechanisms for fast state reconstruction
+- Benchmarking and performance tuning
+
+Phase 5: Compliance Features
+- Real-time event streaming
+- Advanced audit trail capabilities
+- Regulatory reporting support
+
+X. Success Metrics
+
+Technical Metrics:
+- Transaction throughput: >50,000 TPS sustained
+- Query latency: <50ms P95 for balance queries
+- Proof generation: <50ms per transaction
+- FUSE access: <10ms cold, <2ms cached
+
+Business Metrics:
+- Regulatory compliance demonstration for PSD2, Basel III, e-money safeguarding
+- Cryptographic verifiability for 100% of transactions
+- Complete audit trail reconstruction capability
+- Real-time monitoring and alerting functionality
+
+The LedgerFS MVP will validate the core thesis that a cryptographically verifiable, append-only, event-sourced ledger can outperform traditional RDBMS in audit-focused, high-throughput, tamper-evident environments while providing inherent regulatory compliance capabilities. The addition of FUSE integration provides an innovative filesystem interface that makes ledger data accessible through standard filesystem operations, enabling new integration patterns and user experiences.

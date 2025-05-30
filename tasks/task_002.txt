@@ -1,0 +1,90 @@
+# Task ID: 2
+# Title: Implement Event Store with LSM Tree Backend
+# Status: in-progress
+# Dependencies: 1
+# Priority: high
+# Description: Develop the core Event Store using Log-Structured Merge (LSM) tree technology to create an append-only, immutable storage for all ledger events.
+# Details:
+1. Research and select appropriate LSM tree implementation (e.g., RocksDB, LevelDB)
+2. Design event schema with required fields:
+   - Event ID (UUID)
+   - Event Type
+   - Timestamp
+   - Account ID(s)
+   - Transaction data
+   - Metadata
+3. Implement append-only write operations ensuring immutability
+4. Create efficient read operations for event retrieval
+5. Implement batching mechanism for high-throughput writes
+6. Add compression for storage efficiency
+7. Design and implement event serialization/deserialization
+8. Add transaction boundaries for atomic operations
+9. Implement basic error handling and recovery mechanisms
+
+# Test Strategy:
+1. Unit tests for event serialization/deserialization
+2. Performance tests measuring write throughput (target: >50,000 TPS)
+3. Verification tests ensuring append-only behavior (attempts to modify existing events should fail)
+4. Recovery tests simulating system crashes
+5. Benchmark tests comparing against PostgreSQL baseline
+
+# Subtasks:
+## 1. Select and Integrate LSM Tree Backend [done]
+### Dependencies: None
+### Description: Research, evaluate, and select an appropriate LSM tree implementation (such as RocksDB or LevelDB) and integrate it as the storage backend for the Event Store.
+### Details:
+Consider factors such as language compatibility, performance, community support, and available features like compression and batching. Set up the chosen LSM tree library within the project environment.
+<info added on 2025-05-30T20:15:48.631Z>
+Successfully integrated RocksDB as the LSM tree backend for the Event Store. Created comprehensive EventStoreConfig with RocksDB optimization settings. Implemented EventSerializer with bincode + LZ4 compression for high-performance serialization. Built main EventStore with RocksDB backend supporting append_events, get_events, and query operations. Developed high-throughput BatchProcessor with configurable batching for >50K TPS target. Added RecoveryManager for crash recovery and consistency checking. All modules compile successfully with proper async/await patterns and integrate seamlessly with ledgerfs-core types and events.
+
+Technical implementation details include RocksDB configured with LZ4 compression optimized for write-heavy workloads, batch processing using Arc<Mutex<Receiver>> pattern for multi-processor event handling, efficient binary format with compression for event serialization, proper error handling, metrics collection, and a comprehensive test framework.
+</info added on 2025-05-30T20:15:48.631Z>
+
+## 2. Design Event Schema and Serialization [done]
+### Dependencies: 2.1
+### Description: Define the event schema with all required fields and implement serialization/deserialization logic for storing and retrieving events in the LSM tree.
+### Details:
+Specify fields such as Event ID (UUID), Event Type, Timestamp, Account ID(s), Transaction data, and Metadata. Choose an efficient serialization format (e.g., Protocol Buffers, JSON, or Avro) and implement corresponding encode/decode routines.
+<info added on 2025-05-30T20:22:08.485Z>
+The event schema and serialization implementation has been completed with the following components:
+
+1. Event Schema:
+   - EventEnvelope structure with all required fields: event_id (UUID), event_type, aggregate_id, aggregate_version, timestamp, event_data, metadata
+   - LedgerEvent enum covering all banking operations (AccountCreated, AccountStatusChanged, AccountMetadataUpdated, TransactionProcessed, BalanceUpdated, MerkleRootGenerated, DigestPublished)
+   - Comprehensive event types with banking domain fields (account_id, transaction_id, amounts, currencies)
+   - EventMetadata with correlation_id, causation_id, user_id, source for audit trails
+
+2. Serialization Implementation:
+   - EventSerializer using bincode for high-performance binary serialization
+   - Optional LZ4 compression for storage efficiency
+   - SerializedEventEnvelope with format versioning for future compatibility
+   - Error handling with SerializationError enum
+   - Key generation functions for RocksDB storage with timestamp + event_id ordering
+
+3. Banking-Specific Features:
+   - SHA-256 hash calculation for Merkle tree construction
+   - Nanosecond precision timestamp handling
+   - Account-based and time-based key prefixes for efficient querying
+   - Regulatory compliance fields for all events
+
+This implementation satisfies all requirements for the event schema and serialization components.
+</info added on 2025-05-30T20:22:08.485Z>
+
+## 3. Implement Append-Only and Batched Write Operations [done]
+### Dependencies: 2.2
+### Description: Develop append-only write operations to ensure immutability and implement batching mechanisms for high-throughput event ingestion.
+### Details:
+Leverage LSM tree features to batch multiple events into single write operations, ensuring atomicity and durability. Enforce append-only semantics by preventing updates or deletions of existing events.
+
+## 4. Optimize Read and Retrieval Operations [pending]
+### Dependencies: 2.3
+### Description: Implement efficient read operations for event retrieval, leveraging LSM tree data locality and indexing strategies.
+### Details:
+Design queries to efficiently fetch events by key fields (e.g., Event ID, Account ID, Timestamp range). Utilize LSM tree's sorted storage and possible secondary indexes to optimize access patterns.
+
+## 5. Add Compression, Transaction Boundaries, and Recovery Mechanisms [pending]
+### Dependencies: 2.4
+### Description: Enable storage compression, implement transaction boundaries for atomic operations, and add basic error handling and recovery mechanisms.
+### Details:
+Configure LSM tree backend to use block or file-level compression. Implement transaction support to group related writes atomically. Add error handling for write/read failures and recovery routines for crash consistency.
+

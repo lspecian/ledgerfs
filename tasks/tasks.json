@@ -1,0 +1,279 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup Core Project Infrastructure",
+      "description": "Initialize the project repository with necessary configuration for the event-sourced ledger system, including directory structure, dependency management, and CI/CD pipeline.",
+      "details": "1. Create a new repository for LedgerFS\n2. Set up project structure with separate modules for:\n   - API Gateway\n   - Command Processing Service\n   - Event Store\n   - Read Model Projection Services\n   - Cryptographic Attestation Service\n   - Proof Generation & Verification Service\n   - Event Streaming Service\n   - FUSE Interface\n3. Configure build system (e.g., Gradle/Maven for JVM, or Cargo for Rust)\n4. Set up dependency management\n5. Initialize CI/CD pipeline with stages for build, test, benchmark\n6. Create initial documentation structure\n7. Set up logging framework with appropriate levels for production and development",
+      "testStrategy": "1. Verify successful build of empty project structure\n2. Ensure CI pipeline runs successfully on commits\n3. Validate project structure against architectural requirements\n4. Test logging configuration in different environments",
+      "priority": "high",
+      "dependencies": [],
+      "status": "done",
+      "subtasks": []
+    },
+    {
+      "id": 2,
+      "title": "Implement Event Store with LSM Tree Backend",
+      "description": "Develop the core Event Store using Log-Structured Merge (LSM) tree technology to create an append-only, immutable storage for all ledger events.",
+      "details": "1. Research and select appropriate LSM tree implementation (e.g., RocksDB, LevelDB)\n2. Design event schema with required fields:\n   - Event ID (UUID)\n   - Event Type\n   - Timestamp\n   - Account ID(s)\n   - Transaction data\n   - Metadata\n3. Implement append-only write operations ensuring immutability\n4. Create efficient read operations for event retrieval\n5. Implement batching mechanism for high-throughput writes\n6. Add compression for storage efficiency\n7. Design and implement event serialization/deserialization\n8. Add transaction boundaries for atomic operations\n9. Implement basic error handling and recovery mechanisms",
+      "testStrategy": "1. Unit tests for event serialization/deserialization\n2. Performance tests measuring write throughput (target: >50,000 TPS)\n3. Verification tests ensuring append-only behavior (attempts to modify existing events should fail)\n4. Recovery tests simulating system crashes\n5. Benchmark tests comparing against PostgreSQL baseline",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "in-progress",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Select and Integrate LSM Tree Backend",
+          "description": "Research, evaluate, and select an appropriate LSM tree implementation (such as RocksDB or LevelDB) and integrate it as the storage backend for the Event Store.",
+          "dependencies": [],
+          "details": "Consider factors such as language compatibility, performance, community support, and available features like compression and batching. Set up the chosen LSM tree library within the project environment.\n<info added on 2025-05-30T20:15:48.631Z>\nSuccessfully integrated RocksDB as the LSM tree backend for the Event Store. Created comprehensive EventStoreConfig with RocksDB optimization settings. Implemented EventSerializer with bincode + LZ4 compression for high-performance serialization. Built main EventStore with RocksDB backend supporting append_events, get_events, and query operations. Developed high-throughput BatchProcessor with configurable batching for >50K TPS target. Added RecoveryManager for crash recovery and consistency checking. All modules compile successfully with proper async/await patterns and integrate seamlessly with ledgerfs-core types and events.\n\nTechnical implementation details include RocksDB configured with LZ4 compression optimized for write-heavy workloads, batch processing using Arc<Mutex<Receiver>> pattern for multi-processor event handling, efficient binary format with compression for event serialization, proper error handling, metrics collection, and a comprehensive test framework.\n</info added on 2025-05-30T20:15:48.631Z>",
+          "status": "done",
+          "testStrategy": "Verify successful initialization and basic read/write operations using the selected LSM tree backend."
+        },
+        {
+          "id": 2,
+          "title": "Design Event Schema and Serialization",
+          "description": "Define the event schema with all required fields and implement serialization/deserialization logic for storing and retrieving events in the LSM tree.",
+          "dependencies": [
+            1
+          ],
+          "details": "Specify fields such as Event ID (UUID), Event Type, Timestamp, Account ID(s), Transaction data, and Metadata. Choose an efficient serialization format (e.g., Protocol Buffers, JSON, or Avro) and implement corresponding encode/decode routines.\n<info added on 2025-05-30T20:22:08.485Z>\nThe event schema and serialization implementation has been completed with the following components:\n\n1. Event Schema:\n   - EventEnvelope structure with all required fields: event_id (UUID), event_type, aggregate_id, aggregate_version, timestamp, event_data, metadata\n   - LedgerEvent enum covering all banking operations (AccountCreated, AccountStatusChanged, AccountMetadataUpdated, TransactionProcessed, BalanceUpdated, MerkleRootGenerated, DigestPublished)\n   - Comprehensive event types with banking domain fields (account_id, transaction_id, amounts, currencies)\n   - EventMetadata with correlation_id, causation_id, user_id, source for audit trails\n\n2. Serialization Implementation:\n   - EventSerializer using bincode for high-performance binary serialization\n   - Optional LZ4 compression for storage efficiency\n   - SerializedEventEnvelope with format versioning for future compatibility\n   - Error handling with SerializationError enum\n   - Key generation functions for RocksDB storage with timestamp + event_id ordering\n\n3. Banking-Specific Features:\n   - SHA-256 hash calculation for Merkle tree construction\n   - Nanosecond precision timestamp handling\n   - Account-based and time-based key prefixes for efficient querying\n   - Regulatory compliance fields for all events\n\nThis implementation satisfies all requirements for the event schema and serialization components.\n</info added on 2025-05-30T20:22:08.485Z>",
+          "status": "done",
+          "testStrategy": "Write unit tests to ensure events are correctly serialized and deserialized without data loss or corruption."
+        },
+        {
+          "id": 3,
+          "title": "Implement Append-Only and Batched Write Operations",
+          "description": "Develop append-only write operations to ensure immutability and implement batching mechanisms for high-throughput event ingestion.",
+          "dependencies": [
+            2
+          ],
+          "details": "Leverage LSM tree features to batch multiple events into single write operations, ensuring atomicity and durability. Enforce append-only semantics by preventing updates or deletions of existing events.",
+          "status": "done",
+          "testStrategy": "Benchmark write throughput with and without batching; verify that events are only appended and never modified or deleted."
+        },
+        {
+          "id": 4,
+          "title": "Optimize Read and Retrieval Operations",
+          "description": "Implement efficient read operations for event retrieval, leveraging LSM tree data locality and indexing strategies.",
+          "dependencies": [
+            3
+          ],
+          "details": "Design queries to efficiently fetch events by key fields (e.g., Event ID, Account ID, Timestamp range). Utilize LSM tree's sorted storage and possible secondary indexes to optimize access patterns.",
+          "status": "pending",
+          "testStrategy": "Measure read latency and throughput for common query patterns; validate correctness and completeness of retrieved events."
+        },
+        {
+          "id": 5,
+          "title": "Add Compression, Transaction Boundaries, and Recovery Mechanisms",
+          "description": "Enable storage compression, implement transaction boundaries for atomic operations, and add basic error handling and recovery mechanisms.",
+          "dependencies": [
+            4
+          ],
+          "details": "Configure LSM tree backend to use block or file-level compression. Implement transaction support to group related writes atomically. Add error handling for write/read failures and recovery routines for crash consistency.",
+          "status": "pending",
+          "testStrategy": "Test storage size reduction with compression, verify atomicity of multi-event transactions, and simulate failures to ensure recovery mechanisms restore consistency."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Develop Command Processing Service",
+      "description": "Create the service responsible for validating commands, ensuring business logic integrity, and writing events to the Event Store.",
+      "details": "1. Define command schema for core operations:\n   - CreateAccount\n   - DebitAccount\n   - CreditAccount\n   - TransferBetweenAccounts\n2. Implement command validation logic\n3. Create command handlers for each command type\n4. Implement business logic validation (e.g., sufficient funds for debits)\n5. Add idempotency handling to prevent duplicate processing\n6. Create transaction boundaries for atomic operations\n7. Implement error handling and response generation\n8. Add logging for command processing\n9. Create metrics collection for performance monitoring",
+      "testStrategy": "1. Unit tests for command validation logic\n2. Integration tests for end-to-end command processing\n3. Performance tests for command throughput\n4. Idempotency tests ensuring duplicate commands are handled correctly\n5. Error handling tests for various failure scenarios\n6. Business logic validation tests (e.g., insufficient funds)",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 4,
+      "title": "Implement Read Model Projection Services",
+      "description": "Develop services that asynchronously consume events and project them into optimized read models for specific query patterns, implementing the CQRS pattern.",
+      "details": "1. Design read model schemas for common query patterns:\n   - Account balance lookup\n   - Transaction history by account\n   - Transaction details by ID\n2. Implement event consumers to process events from Event Store\n3. Create projection logic to transform events into read models\n4. Implement snapshotting mechanism for performance optimization\n5. Add caching layer for frequently accessed data\n6. Create query API for read models\n7. Implement pagination for large result sets\n8. Add sorting and filtering capabilities\n9. Implement eventual consistency handling\n10. Add metrics for read model performance",
+      "testStrategy": "1. Unit tests for projection logic\n2. Performance tests for read operations (target: <50ms P95 for balance queries)\n3. Consistency tests ensuring read models reflect all processed events\n4. Snapshot tests verifying correct state reconstruction\n5. Cache hit/miss ratio tests\n6. Load tests for concurrent read operations",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        3
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 5,
+      "title": "Develop Merkle Tree Generation and Chaining",
+      "description": "Implement the cryptographic foundation of LedgerFS by creating Merkle trees for transaction batches and chaining them together to ensure ledger integrity.",
+      "details": "1. Implement SHA-256 hashing for individual transactions\n2. Create Merkle tree construction algorithm\n3. Implement batch processing for transaction Merkleization\n4. Design and implement block structure containing:\n   - Block ID\n   - Timestamp\n   - Previous block hash\n   - Merkle root\n   - Block metadata\n5. Create chaining mechanism to link blocks cryptographically\n6. Implement periodic digest generation\n7. Add secure storage for digests outside primary system\n8. Create verification mechanisms for chain integrity\n9. Implement recovery procedures for chain verification failures",
+      "testStrategy": "1. Unit tests for SHA-256 hashing implementation\n2. Merkle tree construction and verification tests\n3. Chain integrity tests with valid and invalid blocks\n4. Performance tests for Merkle tree generation (target: process 50,000 TPS)\n5. Digest generation and storage tests\n6. Security tests attempting to tamper with the chain",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 6,
+      "title": "Implement Proof Generation and Verification API",
+      "description": "Create API endpoints for generating and verifying cryptographic inclusion proofs for transactions and account balances against the published Merkle root.",
+      "details": "1. Design API endpoints for:\n   - Generating inclusion proofs for transactions\n   - Generating inclusion proofs for account balances\n   - Verifying inclusion proofs against ledger digests\n2. Implement Merkle proof generation algorithm\n3. Create proof serialization/deserialization\n4. Implement verification logic for proofs\n5. Add caching for frequently requested proofs\n6. Create documentation for proof format and verification process\n7. Implement rate limiting for proof generation requests\n8. Add metrics for proof generation and verification performance",
+      "testStrategy": "1. Unit tests for proof generation algorithm\n2. Verification tests with valid and invalid proofs\n3. Performance tests for proof generation (target: <50ms per transaction)\n4. API endpoint tests for correct responses\n5. Load tests for concurrent proof requests\n6. Integration tests with external verification tools",
+      "priority": "medium",
+      "dependencies": [
+        5
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 7,
+      "title": "Develop API Gateway",
+      "description": "Create the entry point for external interactions with LedgerFS, handling authentication, authorization, and routing to appropriate services.",
+      "details": "1. Design RESTful API endpoints for:\n   - Account management\n   - Transaction processing\n   - Balance inquiries\n   - Transaction history\n   - Proof generation and verification\n2. Implement authentication mechanisms (OAuth2, API keys)\n3. Create authorization rules based on roles and permissions\n4. Implement request validation and sanitization\n5. Add rate limiting and throttling\n6. Create API documentation using OpenAPI/Swagger\n7. Implement request logging and monitoring\n8. Add error handling and standardized error responses\n9. Implement versioning strategy for API endpoints",
+      "testStrategy": "1. Unit tests for request validation\n2. Authentication and authorization tests\n3. Integration tests for end-to-end API flows\n4. Performance tests for API throughput and latency\n5. Security tests for authentication bypass attempts\n6. Documentation tests ensuring OpenAPI spec matches implementation",
+      "priority": "medium",
+      "dependencies": [
+        3,
+        4,
+        6
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 8,
+      "title": "Implement Event Streaming Service",
+      "description": "Develop a service that publishes ledger events to external consumers in real-time for monitoring, fraud detection, and integration purposes.",
+      "details": "1. Research and select appropriate streaming technology (e.g., Kafka, RabbitMQ)\n2. Design event streaming schema compatible with external systems\n3. Implement event publishing mechanism from Event Store\n4. Create consumer groups and subscription management\n5. Add authentication and authorization for stream consumers\n6. Implement replay capability for historical events\n7. Add filtering options for specific event types or accounts\n8. Create monitoring and alerting for stream health\n9. Implement backpressure handling for slow consumers\n10. Add dead letter queue for failed message processing",
+      "testStrategy": "1. Unit tests for event publishing mechanism\n2. Integration tests with sample consumers\n3. Performance tests for streaming throughput\n4. Replay tests for historical event access\n5. Authentication and authorization tests\n6. Failure recovery tests for network interruptions",
+      "priority": "medium",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 9,
+      "title": "Develop FUSE Filesystem Interface",
+      "description": "Create a filesystem interface using FUSE that exposes ledger data through standard filesystem operations, enabling new integration patterns.",
+      "details": "1. Research and select appropriate FUSE library for implementation\n2. Design filesystem layout according to PRD requirements:\n   - /ledgerfs/accounts/acc_001/balance.json, tx.log, snapshots/\n   - /ledgerfs/transactions/tx_0001.json, tx_0002.json\n   - /ledgerfs/docs/tx_0001/aml_check.json, acc_001/kyc/documents\n3. Implement read-only filesystem operations:\n   - open(), read(), readdir(), getattr()\n4. Create JSON serialization for ledger data\n5. Implement permission mapping through identity layer\n6. Add memory-mapped access where supported\n7. Implement caching for frequently accessed files\n8. Create mount/unmount scripts\n9. Add logging for filesystem operations\n10. Implement error handling for filesystem operations",
+      "testStrategy": "1. Unit tests for filesystem operations\n2. Performance tests for file access (target: <10ms cold, <2ms cached)\n3. Integration tests with standard filesystem tools\n4. Permission tests ensuring proper access control\n5. Stress tests with multiple concurrent readers\n6. Memory usage tests for different access patterns",
+      "priority": "medium",
+      "dependencies": [
+        4
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 10,
+      "title": "Implement Account Management Functionality",
+      "description": "Develop the core account management capabilities including account creation, balance inquiries, and metadata management.",
+      "details": "1. Design account schema with required fields:\n   - Account ID\n   - Account type (e.g., customer, operational)\n   - Creation timestamp\n   - Status (active, closed, suspended)\n   - Metadata (owner information, tags)\n2. Implement account creation command and event handlers\n3. Create account status management (activation, suspension, closure)\n4. Implement balance calculation from event stream\n5. Add account metadata management\n6. Create account search and filtering capabilities\n7. Implement logical fund segregation tagging\n8. Add account-level permissions and access control\n9. Create account hierarchy support (parent-child relationships)\n10. Implement account archiving for inactive accounts",
+      "testStrategy": "1. Unit tests for account creation and management\n2. Balance calculation tests with various transaction scenarios\n3. Performance tests for balance inquiries\n4. Concurrency tests for simultaneous account operations\n5. Integration tests with API Gateway\n6. Compliance tests for fund segregation requirements",
+      "priority": "high",
+      "dependencies": [
+        3,
+        4
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 11,
+      "title": "Implement Transaction Processing",
+      "description": "Develop the core transaction processing functionality including debit/credit operations, transfers, and transaction metadata management.",
+      "details": "1. Design transaction schema with required fields:\n   - Transaction ID\n   - Transaction type (debit, credit, transfer)\n   - Timestamp\n   - Account ID(s)\n   - Amount\n   - Currency\n   - Reference information\n   - Metadata\n2. Implement debit/credit command and event handlers\n3. Create transfer operation (atomic debit+credit)\n4. Implement transaction metadata management\n5. Add transaction reference generation\n6. Create transaction search and filtering\n7. Implement transaction categorization\n8. Add support for multi-currency transactions\n9. Create batch transaction processing\n10. Implement transaction limits and controls",
+      "testStrategy": "1. Unit tests for transaction processing logic\n2. Atomicity tests for transfers\n3. Performance tests for transaction throughput (target: >50,000 TPS)\n4. Concurrency tests for simultaneous transactions on same account\n5. Integration tests with API Gateway\n6. Error handling tests for invalid transactions",
+      "priority": "high",
+      "dependencies": [
+        3,
+        4,
+        10
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 12,
+      "title": "Implement Historical Data Access",
+      "description": "Develop capabilities for querying the raw event log and reconstructing account state at any point in time.",
+      "details": "1. Design query interface for event log access\n2. Implement time-range based event queries\n3. Create account-specific event filtering\n4. Implement state reconstruction algorithm\n5. Add snapshot-based optimization for faster reconstruction\n6. Create point-in-time balance calculation\n7. Implement transaction history generation\n8. Add pagination for large result sets\n9. Create sorting and filtering options\n10. Implement audit trail generation",
+      "testStrategy": "1. Unit tests for query interface\n2. Performance tests for state reconstruction (with and without snapshots)\n3. Accuracy tests comparing reconstructed state with expected values\n4. Integration tests with API Gateway\n5. Load tests for concurrent historical queries\n6. Pagination tests with large datasets",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        4
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 13,
+      "title": "Implement Compliance and Regulatory Features",
+      "description": "Develop features specifically addressing PSD2, Basel III, and e-money safeguarding regulatory requirements.",
+      "details": "1. Implement logical fund segregation for e-money safeguarding\n2. Create real-time monitoring hooks for suspicious activity\n3. Implement Strong Customer Authentication (SCA) support\n4. Add regulatory reporting data extraction\n5. Create compliance audit trail generation\n6. Implement fund identification and tagging\n7. Add support for regulatory holds and freezes\n8. Create data retention policies aligned with regulations\n9. Implement privacy controls (GDPR compliance)\n10. Add support for regulatory notifications and alerts",
+      "testStrategy": "1. Compliance validation tests for each regulatory requirement\n2. Fund segregation verification tests\n3. Audit trail completeness tests\n4. Integration tests with monitoring systems\n5. Performance tests for regulatory reporting\n6. Security tests for SCA implementation",
+      "priority": "high",
+      "dependencies": [
+        8,
+        10,
+        11
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 14,
+      "title": "Develop Comprehensive Benchmarking Suite",
+      "description": "Create a suite of benchmarks to validate LedgerFS performance against the specified targets and PostgreSQL baseline.",
+      "details": "1. Design benchmark methodology for fair comparison\n2. Implement PostgreSQL baseline with equivalent functionality\n3. Create macro benchmarks for:\n   - End-to-end transaction processing\n   - Account state queries\n   - FUSE filesystem access\n4. Implement micro benchmarks for:\n   - Event log operations\n   - Hash chain operations\n   - Snapshot operations\n   - Merkle tree operations\n5. Create compliance benchmarks for:\n   - Proof generation and verification\n   - Historical state reconstruction\n   - Audit trail queries\n6. Implement automated benchmark execution\n7. Create visualization and reporting for benchmark results\n8. Add CI integration for continuous performance monitoring",
+      "testStrategy": "1. Validation tests ensuring benchmark accuracy\n2. Reproducibility tests across different environments\n3. Statistical analysis of benchmark variability\n4. Comparison tests against PostgreSQL baseline\n5. Verification tests for performance targets:\n   - >50,000 TPS for core ledger entries\n   - <100ms P95 for ledger writes\n   - <50ms P95 for balance queries\n   - <10ms cold, <2ms cached for FUSE access\n   - <50ms for proof generation",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        9,
+        11
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 15,
+      "title": "Create Comprehensive Documentation and Deliverables",
+      "description": "Develop all required documentation and deliverables specified in the PRD, including API documentation, compliance mapping, and test results.",
+      "details": "1. Create comprehensive API documentation using OpenAPI/Swagger\n2. Develop FUSE filesystem interface documentation\n3. Create architectural diagrams illustrating system components\n4. Implement interactive API playground\n5. Develop compliance readiness documentation mapping features to regulatory requirements\n6. Create performance benchmarking report\n7. Compile test results and coverage reports\n8. Develop user guides for different personas\n9. Create operational documentation for deployment and maintenance\n10. Implement automated documentation generation from code",
+      "testStrategy": "1. Documentation accuracy tests comparing with actual implementation\n2. API documentation tests using automated tools\n3. User testing with target personas\n4. Compliance documentation review by regulatory experts\n5. Benchmark report validation against raw data\n6. Documentation completeness verification against PRD requirements",
+      "priority": "medium",
+      "dependencies": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "status": "pending",
+      "subtasks": []
+    }
+  ]
+}
